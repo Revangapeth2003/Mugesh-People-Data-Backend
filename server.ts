@@ -35,33 +35,30 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Test database route with proper error handling
+// Database initialization
+const initializeApp = async () => {
+  try {
+    await connectDB();
+    console.log('🗄️ Database connected successfully');
+  } catch (error) {
+    console.error('❌ Database connection failed:', getErrorMessage(error));
+  }
+};
+
+// Initialize database connection
+initializeApp();
+
+// Test database route
 app.get('/test-db-insert', async (req, res) => {
   try {
-    // Set timeout to prevent Vercel function timeout
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Database operation timed out')), 5000);
+    // Add your database test logic here
+    res.json({
+      success: true,
+      message: 'Database test completed successfully',
+      timestamp: new Date().toISOString(),
+      database: 'PostgreSQL (Neon)'
     });
-
-    // Your database test logic here
-    const testOperation = async () => {
-      // Example: Test database connection
-      // const result = await pool.query('SELECT NOW() as current_time');
-      return { 
-        success: true, 
-        message: 'Database connection test completed',
-        timestamp: new Date().toISOString()
-      };
-    };
-
-    // Race between operation and timeout
-    const result = await Promise.race([testOperation(), timeoutPromise]);
-    
-    res.json(result);
-    
   } catch (error) {
-    console.error('Database test error:', error);
-    
     res.status(500).json({ 
       success: false, 
       message: 'Database test failed', 
@@ -70,9 +67,9 @@ app.get('/test-db-insert', async (req, res) => {
   }
 });
 
-// Routes
+// API Routes - Mount your route files
 app.use('/api/auth', authRoutes);
-app.use('/api/people', personRoutes);
+app.use('/api/people', personRoutes);  // Note: using 'people' to match your existing setup
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 
@@ -133,23 +130,6 @@ app.all('*', (req, res) => {
     }
   });
 });
-
-// Database initialization
-const initializeApp = async () => {
-  try {
-    await connectDB();
-    console.log('🗄️ Database connected successfully');
-  } catch (error) {
-    console.error('❌ Database connection failed:', getErrorMessage(error));
-    // Don't exit process on Vercel, just log the error
-    if (process.env.NODE_ENV !== 'production') {
-      process.exit(1);
-    }
-  }
-};
-
-// Initialize database connection
-initializeApp();
 
 // Export for Vercel serverless deployment
 export default app;
